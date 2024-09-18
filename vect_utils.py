@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.feature_extraction.text import CountVectorizer
+from scipy.sparse import csr_matrix
 import numpy as np
 from numpy.linalg import norm
 from numpy import dot
@@ -8,15 +9,31 @@ from numpy import dot
 
 # Custom transformer for MultiLabelBinarizer
 class MultiLabelBinarizerTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.mlb = MultiLabelBinarizer()
+    def __init__(self, sparse_output=True):
+        # Initialize MultiLabelBinarizer with option for sparse output
+        self.sparse_output = sparse_output
+        self.mlb = MultiLabelBinarizer(sparse_output=sparse_output)
 
     def fit(self, X, y=None):
+        # Fit the MultiLabelBinarizer on the input data
         self.mlb.fit(X)
         return self
 
     def transform(self, X):
-        return self.mlb.transform(X)
+        # Transform the input data to multi-label binary format
+        output = self.mlb.transform(X)
+        # If sparse output is enabled, return sparse matrix
+        if self.sparse_output:
+            return csr_matrix(output)
+        return output
+
+    def get_feature_names_out(self, input_features=None):
+        # Return the class names as feature names
+        return np.array([f"class_{cls}" for cls in self.mlb.classes_])
+
+    def get_classes(self):
+        # Return the classes/labels fitted
+        return self.mlb.classes_
 
 # Custom transformer for BM25
 """
